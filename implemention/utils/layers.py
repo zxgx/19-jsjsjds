@@ -184,7 +184,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         out = gamma * bnx + beta
         
         cache = (x, gamma, eps)
-        
+        #print(running_mean.shape)
+        #print(mean.shape)
         running_mean = momentum * running_mean + (1 - momentum) * mean
         running_var = momentum * running_var + (1 - momentum) * var
         #######################################################################

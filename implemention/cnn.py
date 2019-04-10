@@ -140,7 +140,7 @@ class CNN(object):
               -> (affine -> relu) * 2 -> affine -> softmax
     """
     def __init__(self, input_dim=(1, 48, 48), num_filters=32, filter_size=3,
-                 hidden_dim=150, num_classes=7, weight_scale=1e-3, reg=0.0001,
+                 hidden_dim=500, num_classes=7, weight_scale=1e-3, reg=0.0001,
                  dtype=np.float64):
         
         self.params = {}
@@ -172,7 +172,7 @@ class CNN(object):
         self.params['b4'] = np.zeros(num_filters)
         # N, 32, 12, 12
         C, H, W = num_filters, (H-2)//2+1, (W-2)//2+1
-        
+        """
         # conv -> relu #3
         self.params['W5'] = weight_scale * np.random.randn(num_filters, num_filters, filter_size, filter_size)
         self.params['b5'] = np.zeros(num_filters)
@@ -181,15 +181,15 @@ class CNN(object):
         self.params['b6'] = np.zeros(num_filters)
         # N, 32, 6, 6
         C, H, W = num_filters, (H-2)//2+1, (W-2)//2+1
-        
+        """
         # affine -> relu 1
         self.params['W7'] = weight_scale * np.random.randn(num_filters*H*W, hidden_dim)
         self.params['b7'] = np.zeros(hidden_dim)
-
+        """
         # affine -> relu 2
         self.params['W8'] = weight_scale * np.random.randn(hidden_dim, hidden_dim)
         self.params['b8'] = np.zeros(hidden_dim)
-        
+        """
         # affine
         self.params['W9'] = weight_scale * np.random.randn(hidden_dim, num_classes)
         self.params['b9'] = np.zeros(num_classes)
@@ -207,39 +207,39 @@ class CNN(object):
         scores = None
         caches = []
         # batchnorm
-        out1, cache = spatial_batchnorm_forward(X, self.params['gamma'], self.params['beta'], bn_param)
+        out, cache = spatial_batchnorm_forward(X, self.params['gamma'], self.params['beta'], bn_param)
         caches.append(cache)
         
         # conv -> relu #1
-        out2, cache = conv_relu_forward(out1, self.params['W1'], self.params['b1'], conv_param)
+        out, cache = conv_relu_forward(out, self.params['W1'], self.params['b1'], conv_param)
         caches.append(cache)
         # conv -> relu -> 2x2 maxpool #1
-        out3, cache = conv_relu_pool_forward(out2, self.params['W2'], self.params['b2'], conv_param, pool_param)
+        out, cache = conv_relu_pool_forward(out, self.params['W2'], self.params['b2'], conv_param, pool_param)
         caches.append(cache)
         
         # conv -> relu #2
-        out4, cache = conv_relu_forward(out3, self.params['W3'], self.params['b3'], conv_param)
+        out, cache = conv_relu_forward(out, self.params['W3'], self.params['b3'], conv_param)
         caches.append(cache)
         # conv -> relu -> 2x2 maxpool #2
-        out5, cache = conv_relu_pool_forward(out4, self.params['W4'], self.params['b4'], conv_param, pool_param)
+        out, cache = conv_relu_pool_forward(out, self.params['W4'], self.params['b4'], conv_param, pool_param)
         caches.append(cache)
-        
+        """
         # conv -> relu #3
         out6, cache = conv_relu_forward(out5, self.params['W5'], self.params['b5'], conv_param)
         caches.append(cache)
         # conv -> relu -> 2x2 maxpool #3
         out7, cache = conv_relu_pool_forward(out6, self.params['W6'], self.params['b6'], conv_param, pool_param)
         caches.append(cache)
-        
+        """
         # affine -> relu #1
-        out8, cache = affine_relu_forward(out7, self.params['W7'], self.params['b7'])
+        out, cache = affine_relu_forward(out, self.params['W7'], self.params['b7'])
         caches.append(cache)
-        
+        """
         # affine -> relu #2
         out9, cache = affine_relu_forward(out8, self.params['W8'], self.params['b8'])
         caches.append(cache)
-        
-        scores, cache = affine_forward(out9, self.params['W9'], self.params['b9'])
+        """
+        scores, cache = affine_forward(out, self.params['W9'], self.params['b9'])
         caches.append(cache)
         
         if y is None:
@@ -249,22 +249,25 @@ class CNN(object):
         
         loss, dscores = softmax_loss(scores, y)
         for i in range(1,10):
+            if i==5 or i==6 or i==8:
+                continue
             W_ind = 'W'+str(i)
             loss += 0.5 * self.reg * np.sum(self.params[W_ind]**2)
         
         dout, grads['W9'], grads['b9'] = affine_backward(dscores, caches.pop())     # affine
         grads['W9'] += self.reg * self.params['W9']
-        
+        """
         dout, grads['W8'], grads['b8'] = affine_relu_backward(dout, caches.pop())   # affine relu
         grads['W8'] += self.reg * self.params['W8']
+        """
         dout, grads['W7'], grads['b7'] = affine_relu_backward(dout, caches.pop())   # affine relu
         grads['W7'] += self.reg * self.params['W7']
-        
+        """
         dout, grads['W6'], grads['b6'] = conv_relu_pool_backward(dout, caches.pop())# conv relu pool
         grads['W6'] += self.reg * self.params['W6']
         dout, grads['W5'], grads['b5'] = conv_relu_backward(dout, caches.pop())     # conv relu
         grads['W5'] += self.reg * self.params['W5']
-        
+        """
         dout, grads['W4'], grads['b4'] = conv_relu_pool_backward(dout, caches.pop())# conv relu pool
         grads['W4'] += self.reg * self.params['W4']
         dout, grads['W3'], grads['b3'] = conv_relu_backward(dout, caches.pop())     # conv relu

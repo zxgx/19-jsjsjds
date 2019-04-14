@@ -1,3 +1,3 @@
 # CNNNNN
 
-An customized implemention of convolutional network.
+计算机设计大赛人工智能挑战赛.
